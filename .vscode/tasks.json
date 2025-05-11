@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and Run",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "-o",
+                "game.exe",
+                "src/game.c",
+                "-I", "PDCurses-master",
+                "-L", "PDCurses-master/wincon",
+                "-lpdcurses"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Compila o código e gera um executável"
+        }
+    ]
+}
