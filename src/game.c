@@ -103,10 +103,94 @@ char map[] =
     int startY = nScreenHeight / 2 - 2;
     int startX = (nScreenWidth - wcslen(title)) / 2;
 
-    swprintf(&screen[startY * nScreenWidth + startX], L"%ls", title);
-    swprintf(&screen[(startY + 1) * nScreenWidth + startX], L"%ls", option1);
-    swprintf(&screen[(startY + 2) * nScreenWidth + startX], L"%ls", option2);
+    swprintf(&screen[startY * nScreenWidth + startX], nScreenWidth - startX, L"%ls", title);
+    swprintf(&screen[(startY + 1) * nScreenWidth + startX], nScreenWidth - startX, L"%ls", option1);
+    swprintf(&screen[(startY + 2) * nScreenWidth + startX], nScreenWidth - startX, L"%ls", option2);
 
+    }
+
+    void drawWin(wchar_t *screen) {
+        for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
+            screen[i] = L' ';
+
+        const wchar_t *trophy[] = {
+            L"            ############################          ",
+            L"            ##########################            ",
+            L"            ##########################            ",
+            L"            ##########################  ##        ",
+            L"      ########################################    ",
+            L"    ####    ##########################      ##    ",
+            L"    ####      ########################      ##    ",
+            L"      ##      ########################    ####    ",
+            L"        ####    ####################    ####      ",
+            L"          ################################        ",
+            L"              ########################            ",
+            L"                  ##############                  ",
+            L"                    ############                  ",
+            L"                      ########                    ",
+            L"                                                  ",
+            L"                                                  ",
+            L"                  ##############                  ",
+            L"                  ################                ",
+            L"                  ################                ",
+            L"                ##################                "
+        };
+
+        const wchar_t *title = L"PARABÉNS, CAMPEÃO!";
+        const wchar_t *subtitle = L"Você conquistou o labirinto!";
+        const wchar_t *option = L"Pressione [M] para voltar ao Menu";
+
+        int startY = nScreenHeight / 2 - 10;
+        int trophyX = (nScreenWidth - wcslen(trophy[0])) / 2;
+
+        for (int i = 0; i < 20; i++) {
+            swprintf(&screen[(startY + i) * nScreenWidth + trophyX], wcslen(trophy[i]) + 1, L"%ls", trophy[i]);
+        }
+
+        int textY = startY + 20 + 1;
+        int titleX = (nScreenWidth - wcslen(title)) / 2;
+        int subtitleX = (nScreenWidth - wcslen(subtitle)) / 2;
+        int optionX = (nScreenWidth - wcslen(option)) / 2;
+
+        swprintf(&screen[textY * nScreenWidth + titleX], wcslen(title) + 1, L"%ls", title);
+        swprintf(&screen[(textY + 2) * nScreenWidth + subtitleX], wcslen(subtitle) + 1, L"%ls", subtitle);
+        swprintf(&screen[(textY + 4) * nScreenWidth + optionX], wcslen(option) + 1, L"%ls", option);
+        // Sleep(100); // tirei o tempo pra aparecer a tela instantâneamente, mas pode mudar isso
+    }
+
+    void drawGameOver(wchar_t *screen) {
+        for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+            screen[i] = L' ';
+        }
+
+        const wchar_t *gameOverArt[] = {
+            L"   _____          __  __ ______    ______      ________ _____  ",
+            L"  / ____|   /\\   |  \\/  |  ____|  / __ \\ \\    / /  ____|  __ \\ ",
+            L" | |  __   /  \\  | \\  / | |__    | |  | \\ \\  / /| |__  | |__) |",
+            L" | | |_ | / /\\ \\ | |\\/| |  __|   | |  | |\\ \\/ / |  __| |  _  / ",
+            L" | |__| |/ ____ \\| |  | | |____  | |__| | \\  /  | |____| | \\ \\ ",
+            L"  \\_____/_/    \\_\\_|  |_|______|  \\____/   \\/   |______|_|  \\_\\"
+        };
+
+        const wchar_t *options[] = {
+            L"[R] Reiniciar Jogo",
+            L"[M] Voltar ao Menu"
+        };
+
+        int startY = nScreenHeight / 2 - 6;  // Ajuste para alinhar verticalmente
+        int artX = (nScreenWidth - wcslen(gameOverArt[0])) / 2;
+
+        for (int i = 0; i < 6; i++) {
+            swprintf(&screen[(startY + i) * nScreenWidth + artX], 
+                    wcslen(gameOverArt[i]) + 1, L"%ls", gameOverArt[i]);
+        }
+
+        int optionY = startY + 8;
+        for (int i = 0; i < 2; i++) {
+            int optionX = (nScreenWidth - wcslen(options[i])) / 2;
+            swprintf(&screen[(optionY + i*2) * nScreenWidth + optionX], 
+                    wcslen(options[i]) + 1, L"%ls", options[i]);
+        }
     }
 
 int main() {
@@ -178,6 +262,11 @@ int main() {
                 }
             }
 
+            if (map[(int)fPlayerX * nMapWidth + (int)fPlayerY] == '%') {
+                currentState = STATE_WIN;
+                continue;
+            }
+
             if ((int)fPlayerX == (int)fEnemyX && (int)fPlayerY == (int)fEnemyY) {
                 fPlayerX = 25.99f;
                 fPlayerY = 10.70f;
@@ -186,7 +275,7 @@ int main() {
                 fPlayerA = 4.0f;
                 enemyChasing = false;
                 currentState = STATE_GAMEOVER;
-                Sleep(500);
+                Sleep(50);
                 continue;
             }
             
@@ -349,12 +438,81 @@ int main() {
             break;
 
         case STATE_GAMEOVER:
+            drawGameOver(screen);
+
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                colors[i] = 0;
+
+                if (screen[i] != L' ') {
+                    colors[i] = FOREGROUND_RED | FOREGROUND_INTENSITY;
+                }
+
+                int optionY = nScreenHeight / 2 + 2;
+                const wchar_t *options[] = {L"[R] Reiniciar Jogo", L"[M] Voltar ao Menu"};
+                
+                for (int j = 0; j < 2; j++) {
+                    int optionX = (nScreenWidth - wcslen(options[j])) / 2;
+                    if (i >= (optionY + j*2) * nScreenWidth + optionX && 
+                        i < (optionY + j*2) * nScreenWidth + optionX + wcslen(options[j])) {
+                        colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+                    }
+                }
+            }
+
+            WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+            WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+
+            static bool keyProcessed = false;
+            
+            if (GetAsyncKeyState('R') & 0x8000) {
+                if (!keyProcessed) {
+                    fPlayerX = 25.99f;
+                    fPlayerY = 10.70f;
+                    fEnemyX = 3.48f;
+                    fEnemyY = 16.92f;
+                    fPlayerA = 4.0f;
+                    currentState = STATE_PLAYING;
+                    keyProcessed = true;
+                }
+            } 
+            else if (GetAsyncKeyState('M') & 0x8000) {
+                if (!keyProcessed) {
+                    currentState = STATE_MENU;
+                    keyProcessed = true;
+                }
+            } 
+            else {
+                keyProcessed = false;
+            }
             break;
 
         case STATE_PAUSE:
             break;
 
         case STATE_WIN:
+            drawWin(screen);
+
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+                if (screen[i] == L'#') {
+                    colors[i] = BACKGROUND_RED | BACKGROUND_GREEN | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+                }
+                colors[i] |= BACKGROUND_BLUE; 
+            }
+
+            WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+            WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+
+            if (GetAsyncKeyState('M') & 0x8000) {
+                fPlayerX = 25.99f;
+                fPlayerY = 10.70f;
+                fEnemyX = 3.48f;
+                fEnemyY = 16.92f;
+                fPlayerA = 4.0f;
+                enemyChasing = false;
+                currentState = STATE_MENU;
+                Sleep(200);
+            }
             break;
         }
     }
