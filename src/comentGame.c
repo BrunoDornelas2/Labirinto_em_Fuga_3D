@@ -102,21 +102,117 @@ char map[] =
     GameState currentState = STATE_MENU;
 
     void drawMenu(wchar_t *screen) {
-    //limpa a tela
-    for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
-        screen[i] = L' ';
+        // Limpa a tela
+        for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
+            screen[i] = L' ';
 
-    const wchar_t *title = L"=== MEU JOGO ===";
-    const wchar_t *option1 = L"1. Iniciar Jogo";
-    const wchar_t *option2 = L"2. Sair";
+        const wchar_t *title = L"=== MEU JOGO ===";
+        const wchar_t *option1 = L"1. Iniciar Jogo";
+        const wchar_t *option2 = L"2. Sair";
 
-    int startY = nScreenHeight / 2 - 2;
-    int startX = (nScreenWidth - wcslen(title)) / 2;
+        int startY = nScreenHeight / 2 - 2;
+        int startX = (nScreenWidth - wcslen(title)) / 2;
 
-    swprintf(&screen[startY * nScreenWidth + startX], L"%ls", title);
-    swprintf(&screen[(startY + 1) * nScreenWidth + startX], L"%ls", option1);
-    swprintf(&screen[(startY + 2) * nScreenWidth + startX], L"%ls", option2);
+        swprintf(&screen[startY * nScreenWidth + startX], nScreenWidth - startX, L"%ls", title);
+        swprintf(&screen[(startY + 1) * nScreenWidth + startX], nScreenWidth - startX, L"%ls", option1);
+        swprintf(&screen[(startY + 2) * nScreenWidth + startX], nScreenWidth - startX, L"%ls", option2);
+    }
 
+    void drawWin(wchar_t *screen) {
+        // Limpa a tela
+        for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
+            screen[i] = L' ';
+
+        // Troféu em ASCII art (versão refinada)
+        const wchar_t *trophy[] = {
+            L"            ############################          ",
+            L"            ##########################            ",
+            L"            ##########################            ",
+            L"            ##########################  ##        ",
+            L"      ########################################    ",
+            L"    ####    ##########################      ##    ",
+            L"    ####      ########################      ##    ",
+            L"      ##      ########################    ####    ",
+            L"        ####    ####################    ####      ",
+            L"          ################################        ",
+            L"              ########################            ",
+            L"                  ##############                  ",
+            L"                    ############                  ",
+            L"                      ########                    ",
+            L"                                                  ",
+            L"                                                  ",
+            L"                  ##############                  ",
+            L"                  ################                ",
+            L"                  ################                ",
+            L"                ##################                "
+        };
+
+        // Mensagens
+        const wchar_t *title = L"PARABÉNS, CAMPEÃO!";
+        const wchar_t *subtitle = L"Você conquistou o labirinto!";
+        const wchar_t *option = L"Pressione [M] para voltar ao Menu";
+
+        // Centraliza o troféu vertical e horizontalmente
+        int startY = nScreenHeight / 2 - 10;  // Ajuste fino para centralização
+        int trophyX = (nScreenWidth - wcslen(trophy[0])) / 2;
+
+        // Desenha o troféu linha por linha
+        for (int i = 0; i < 20; i++) {
+            swprintf(&screen[(startY + i) * nScreenWidth + trophyX], wcslen(trophy[i]) + 1, L"%ls", trophy[i]);
+        }
+
+        // Mensagens abaixo do troféu
+        int textY = startY + 20 + 1;  // Espaço após o troféu
+        int titleX = (nScreenWidth - wcslen(title)) / 2;
+        int subtitleX = (nScreenWidth - wcslen(subtitle)) / 2;
+        int optionX = (nScreenWidth - wcslen(option)) / 2;
+
+        swprintf(&screen[textY * nScreenWidth + titleX], wcslen(title) + 1, L"%ls", title);
+        swprintf(&screen[(textY + 2) * nScreenWidth + subtitleX], wcslen(subtitle) + 1, L"%ls", subtitle);
+        swprintf(&screen[(textY + 4) * nScreenWidth + optionX], wcslen(option) + 1, L"%ls", option);
+        // Delay para efeito dramático
+        Sleep(800);
+    }
+
+    void drawGameOver(wchar_t *screen) {
+        // Limpa a tela
+        for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+            screen[i] = L' ';
+        }
+
+        // Arte ASCII - GAME OVER estilizado
+        const wchar_t *gameOverArt[] = {
+            L"   _____          __  __ ______    ______      ________ _____  ",
+            L"  / ____|   /\\   |  \\/  |  ____|  / __ \\ \\    / /  ____|  __ \\ ",
+            L" | |  __   /  \\  | \\  / | |__    | |  | \\ \\  / /| |__  | |__) |",
+            L" | | |_ | / /\\ \\ | |\\/| |  __|   | |  | |\\ \\/ / |  __| |  _  / ",
+            L" | |__| |/ ____ \\| |  | | |____  | |__| | \\  /  | |____| | \\ \\ ",
+            L"  \\_____/_/    \\_\\_|  |_|______|  \\____/   \\/   |______|_|  \\_\\"
+        };
+
+        // Opções
+        const wchar_t *options[] = {
+            L"[R] Reiniciar Jogo",
+            L"[M] Voltar ao Menu"
+        };
+
+        // Centraliza a arte
+        int startY = nScreenHeight / 2 - 6;  // Ajuste para alinhar verticalmente
+        int artX = (nScreenWidth - wcslen(gameOverArt[0])) / 2;
+
+        // Desenha a arte
+        for (int i = 0; i < 6; i++) {
+            swprintf(&screen[(startY + i) * nScreenWidth + artX], 
+                    wcslen(gameOverArt[i]) + 1, L"%ls", gameOverArt[i]);
+        }
+
+        // Desenha as opções (centralizadas)
+        int optionY = startY + 8;
+        for (int i = 0; i < 2; i++) {
+            int optionX = (nScreenWidth - wcslen(options[i])) / 2;
+            swprintf(&screen[(optionY + i*2) * nScreenWidth + optionX], 
+                    wcslen(options[i]) + 1, L"%ls", options[i]);
+        }
     }
 
 int main() {
@@ -201,6 +297,12 @@ int main() {
                 }
             }
 
+            // Verifica se o jogador chegou na saída (%)
+            if (map[(int)fPlayerX * nMapWidth + (int)fPlayerY] == '%') {
+                currentState = STATE_WIN;
+                continue;
+            }
+
             if ((int)fPlayerX == (int)fEnemyX && (int)fPlayerY == (int)fEnemyY) {
                 fPlayerX = 25.99f;
                 fPlayerY = 10.70f;
@@ -209,7 +311,7 @@ int main() {
                 fPlayerA = 4.0f;
                 enemyChasing = false;
                 currentState = STATE_GAMEOVER;
-                Sleep(500);
+                Sleep(50);
                 continue;
             }
             
@@ -386,12 +488,62 @@ int main() {
             break;
 
         case STATE_GAMEOVER:
-            break;
+            drawGameOver(screen);
+            
+            // Configuração de cores
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                // Fundo preto padrão
+                colors[i] = 0;
+                
+                // Arte em vermelho brilhante
+                if (screen[i] != L' ') {
+                    colors[i] = FOREGROUND_RED | FOREGROUND_INTENSITY;
+                }
+                
+                // Opções em branco brilhante
+                int optionY = nScreenHeight / 2 + 2;
+                const wchar_t *options[] = {L"[R] Reiniciar Jogo", L"[M] Voltar ao Menu"};
+                
+                for (int j = 0; j < 2; j++) {
+                    int optionX = (nScreenWidth - wcslen(options[j])) / 2;
+                    if (i >= (optionY + j*2) * nScreenWidth + optionX && 
+                        i < (optionY + j*2) * nScreenWidth + optionX + wcslen(options[j])) {
+                        colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+                    }
+                }
+            }
 
         case STATE_PAUSE:
             break;
 
         case STATE_WIN:
+            drawWin(screen);
+
+            // Atualiza cores (já existente)
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+                if (screen[i] == L'#') {
+                    colors[i] = BACKGROUND_RED | BACKGROUND_GREEN | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+                }
+                colors[i] |= BACKGROUND_BLUE; 
+            }
+
+            WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+            WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+
+            // --- NOVO: RESET DO JOGO AO PRESSIONAR 'M' ---
+            if (GetAsyncKeyState('M') & 0x8000) {
+                // Reinicia todas as variáveis do jogo
+                fPlayerX = 25.99f;
+                fPlayerY = 10.70f;
+                fEnemyX = 3.48f;
+                fEnemyY = 16.92f;
+                fPlayerA = 4.0f;
+                enemyChasing = false;
+                
+                currentState = STATE_MENU;
+                Sleep(200); // Evita múltiplos inputs acidentais
+            }
             break;
         }
     }
