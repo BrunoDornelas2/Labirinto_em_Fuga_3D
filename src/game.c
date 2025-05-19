@@ -21,6 +21,9 @@ float fFOV = 3.14159f / 4.0f;
 float fDepth = 27.0f;
 float fSpeed = 5.0f;
 
+bool bEscKeyPressed = false;
+bool bEscKeyPressedPrev = false;
+
 char map[] =
     "####################%######"
     "#.....#....##.....#....#..#"
@@ -289,6 +292,9 @@ int main() {
         QueryPerformanceCounter(&t2);
         float fElapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
         t1 = t2;
+
+        bEscKeyPressedPrev = bEscKeyPressed;
+        bEscKeyPressed = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
         
         switch (currentState)
         {
@@ -324,7 +330,13 @@ int main() {
             if (!playMusicPlaying) {
                 PlaySound(TEXT("assets/play.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
                 playMusicPlaying = true;
-            }    
+            }
+            
+            if (bEscKeyPressed && !bEscKeyPressedPrev) {
+                currentState = STATE_PAUSE;
+                Sleep(100);
+                continue;
+            }
 
             if (GetAsyncKeyState('A') & 0x8000)
                 fPlayerA -= (fSpeed * 0.75f) * fElapsedTime;
@@ -591,6 +603,31 @@ int main() {
             break;
 
         case STATE_PAUSE:
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                    screen[i] = ' ';
+                    colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+                }
+
+                // Mensagem de pause
+                const wchar_t* pauseMsg = L"PAUSE - Pressione ESC para continuar";
+                int msgLen = wcslen(pauseMsg);
+                int startX = (nScreenWidth / 2) - (msgLen / 2);
+                int startY = nScreenHeight / 2;
+
+                for (int i = 0; i < msgLen; i++) {
+                    screen[startY * nScreenWidth + startX + i] = pauseMsg[i];
+                    colors[startY * nScreenWidth + startX + i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+                }
+
+                WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+                WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+
+                // Verifica se ESC foi pressionado agora para sair do pause
+                if (bEscKeyPressed && !bEscKeyPressedPrev) {
+                    currentState = STATE_PLAYING;
+                    Sleep(100);
+                    break;
+                }
             break;
 
         case STATE_WIN:
