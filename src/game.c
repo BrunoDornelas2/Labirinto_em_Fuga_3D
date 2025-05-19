@@ -160,6 +160,9 @@ void addScore(const wchar_t *name, int deaths, float time) {
 
 
 void drawMenu(wchar_t *screen) {
+    for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+        screen[i] = L' ';
+    }
     const wchar_t *asciiTitle[] = {
         L":::::::.   :::         ...     :::::::. :: .::::::.   :::::::-.   ...    ::::::.    :::.  .,-:::::/ .,::::::     ...   :::.    :::.",
         L" ;;;'';;'  ;;;      .;;;;;;;.   ;;;'';;',';;;`    `    ;;,   `';, ;;     ;;;`;;;;,  `;;;,;;-'````'  ;;;;''''  .;;;;;;;.`;;;;,  `;;;",
