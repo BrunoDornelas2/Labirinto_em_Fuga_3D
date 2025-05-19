@@ -85,18 +85,78 @@ char map[] =
         }
     }
 
+    int calculateScore(int deaths, float time) {
+    // Quanto menos mortes e menos tempo, maior a pontuação
+    return (int)(10000 / (1 + deaths * 10 + time));
+    }
+
     float fEnemyDirAngle = 0.0f;
     float fEnemyDirTimer = 0.0f;
+
+    typedef struct {
+    wchar_t name[50];
+    int deaths;
+    float time;
+    int score;
+    } PlayerScore;
+
+    #define MAX_SCORES 10
+    PlayerScore scores[MAX_SCORES];
+    int scoreCount = 0;
+
+    // Variáveis para controle da pontuação atual
+    wchar_t currentPlayerName[50] = L"";
+    int currentDeaths = 0;
+    float currentGameTime = 0.0f;
+    bool nameEntered = false;
 
     typedef enum {
     STATE_MENU,
     STATE_PLAYING,
     STATE_GAMEOVER,
+    STATE_ENTER_NAME,
     STATE_PAUSE,
     STATE_WIN
     } GameState;
 
     GameState currentState = STATE_MENU;
+
+void addScore(const wchar_t *name, int deaths, float time) {
+    if (scoreCount < MAX_SCORES) {
+        wcscpy(scores[scoreCount].name, name);
+        scores[scoreCount].deaths = deaths;
+        scores[scoreCount].time = time;
+        scores[scoreCount].score = calculateScore(deaths, time);
+        scoreCount++;
+    } else {
+        // Encontra a pior pontuação
+        int minIndex = 0;
+        for (int i = 1; i < MAX_SCORES; i++) {
+            if (scores[i].score < scores[minIndex].score) {
+                minIndex = i;
+            }
+        }
+        
+        // Substitui se a nova pontuação for melhor
+        if (calculateScore(deaths, time) > scores[minIndex].score) {
+            wcscpy(scores[minIndex].name, name);
+            scores[minIndex].deaths = deaths;
+            scores[minIndex].time = time;
+            scores[minIndex].score = calculateScore(deaths, time);
+        }
+    }
+    
+    // Ordena o ranking (melhores primeiro)
+    for (int i = 0; i < scoreCount - 1; i++) {
+        for (int j = i + 1; j < scoreCount; j++) {
+            if (scores[j].score > scores[i].score) {
+                PlayerScore temp = scores[i];
+                scores[i] = scores[j];
+                scores[j] = temp;
+            }
+        }
+    }
+}
 
 
 void drawMenu(wchar_t *screen) {
@@ -207,9 +267,12 @@ void drawWin(wchar_t *screen) {
 
     const wchar_t *title = L"PARABÉNS, CAMPEÃO!";
     const wchar_t *subtitle = L"Você conquistou o labirinto!";
+    wchar_t scoreText[100];
+    _snwprintf(scoreText, 100, L"%d (Mortes: %d, Tempo: %.1fs)", calculateScore(currentDeaths, currentGameTime), currentDeaths, currentGameTime);
+    
     const wchar_t *option = L"Pressione [M] para voltar ao Menu";
 
-    int startY = nScreenHeight / 2 - 10;
+    int startY = nScreenHeight / 2 - 15;
     int trophyX = (nScreenWidth - wcslen(trophy[0])) / 2;
 
     for (int i = 0; i < 20; i++) {
@@ -217,17 +280,29 @@ void drawWin(wchar_t *screen) {
                   nScreenWidth, L"%s", trophy[i]);
     }
 
-    int textY = startY + 20 + 1;
+    int textY = startY + 20;
     int titleX = (nScreenWidth - wcslen(title)) / 2;
     int subtitleX = (nScreenWidth - wcslen(subtitle)) / 2;
+    int scoreX = (nScreenWidth - wcslen(scoreText)) / 2;
     int optionX = (nScreenWidth - wcslen(option)) / 2;
 
-    _snwprintf(&screen[textY * nScreenWidth + titleX], 
-              nScreenWidth, L"%s", title);
-    _snwprintf(&screen[(textY + 2) * nScreenWidth + subtitleX], 
-              nScreenWidth, L"%s", subtitle);
-    _snwprintf(&screen[(textY + 4) * nScreenWidth + optionX], 
-              nScreenWidth, L"%s", option);
+    _snwprintf(&screen[textY * nScreenWidth + titleX], nScreenWidth, L"%s", title);
+    _snwprintf(&screen[(textY + 2) * nScreenWidth + subtitleX], nScreenWidth, L"%s", subtitle);
+    
+    _snwprintf(&screen[(textY + 4) * nScreenWidth + scoreX], nScreenWidth, L"%s", scoreText);
+              
+    // Mostra o ranking
+    const wchar_t *rankingTitle = L"=== TOP JOGADORES ===";
+    int rankingX = (nScreenWidth - wcslen(rankingTitle)) / 2;
+    _snwprintf(&screen[(textY + 6) * nScreenWidth + rankingX], nScreenWidth, L"%s", rankingTitle);
+    
+    for (int i = 0; i < (scoreCount < 5 ? scoreCount : 5); i++) {
+        wchar_t rankEntry[100];
+        _snwprintf(rankEntry, 100, L"%d. %s - %d pts (Mortes: %d, Tempo: %.1fs)", i+1, scores[i].name, scores[i].score, scores[i].deaths, scores[i].time);
+        int entryX = (nScreenWidth - wcslen(rankEntry)) / 2;
+        _snwprintf(&screen[(textY + 8 + i) * nScreenWidth + entryX], nScreenWidth, L"%s", rankEntry);
+    }
+    _snwprintf(&screen[(textY + 4) * nScreenWidth + optionX], nScreenWidth, L"%s", option);
 }
 
 void drawGameOver(wchar_t *screen) {
@@ -300,6 +375,14 @@ int main() {
         {
         case STATE_MENU:
 
+            // Resetar estatísticas da partida
+            currentDeaths = 0;
+            currentGameTime = 0.0f;
+            nameEntered = false;
+
+            victoryMusicPlaying = false;
+            gameoverMusicPlaying = false;
+
             if (!menuMusicPlaying) {
                 PlaySound(TEXT("assets/intro.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
                 menuMusicPlaying = true;
@@ -316,7 +399,7 @@ int main() {
             if (GetAsyncKeyState('1') & 0x8000) {
                 PlaySound(NULL, 0, 0); // Para a música
                 menuMusicPlaying = false;
-                currentState = STATE_PLAYING;
+                currentState = STATE_ENTER_NAME;
                 Sleep(200);
             } else if (GetAsyncKeyState('2') & 0x8000) {
                 free(screen);
@@ -324,8 +407,57 @@ int main() {
                 return 0;
             }
             break;
+        
+        case STATE_ENTER_NAME:
+            // Limpa a tela
+            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
+                screen[i] = L' ';
+                colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            }
+                
+            // Mensagem para digitar o nome
+            const wchar_t* prompt = L"Digite seu nome e pressione ENTER:";
+            int promptX = (nScreenWidth - wcslen(prompt)) / 2;
+            _snwprintf(&screen[10 * nScreenWidth + promptX], 
+                    nScreenWidth, L"%s", prompt);
+                
+            // Mostra o nome atual sendo digitado
+            int nameX = (nScreenWidth - wcslen(currentPlayerName)) / 2;
+            _snwprintf(&screen[12 * nScreenWidth + nameX], 
+                    nScreenWidth, L"%s", currentPlayerName);
+                
+            // Processa entrada do teclado
+            for (int i = 0; i < 256; i++) {
+                if (GetAsyncKeyState(i) & 0x8000) {
+                    if (i == VK_RETURN && wcslen(currentPlayerName) > 0) {
+                        nameEntered = true;
+                        currentState = STATE_PLAYING;
+                        playMusicPlaying = false;
+                        Sleep(200);
+                    } 
+                    else if (i == VK_BACK && wcslen(currentPlayerName) > 0) {
+                        currentPlayerName[wcslen(currentPlayerName)-1] = L'\0';
+                        Sleep(100);
+                    }
+                    else if ((i >= 'A' && i <= 'Z') || (i >= '0' && i <= '9') || i == ' ' && wcslen(currentPlayerName) < 49) {
+                        // Converte para wide char e adiciona
+                        wchar_t c = (wchar_t)i;
+                        size_t len = wcslen(currentPlayerName);
+                        currentPlayerName[len] = c;
+                        currentPlayerName[len+1] = L'\0';
+                        Sleep(100);
+                    }
+                }
+            }
+                
+            WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+            WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
+            break;
+            
 
         case STATE_PLAYING:
+            
+            currentGameTime += fElapsedTime;    
 
             if (!playMusicPlaying) {
                 PlaySound(TEXT("assets/play.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
@@ -362,26 +494,19 @@ int main() {
             }
 
             if (map[(int)fPlayerX * nMapWidth + (int)fPlayerY] == '%') {
-                PlaySound(NULL, 0, 0); // Para a música de jogo
-                playMusicPlaying = false;
-
-                if (!victoryMusicPlaying) {
-                    PlaySound(TEXT("assets/victory.wav"), NULL, SND_FILENAME | SND_ASYNC );
-                    victoryMusicPlaying = true;
-                }
+                
+                addScore(currentPlayerName, currentDeaths, currentGameTime);
                 currentState = STATE_WIN;
                 continue;
             }
 
             if ((int)fPlayerX == (int)fEnemyX && (int)fPlayerY == (int)fEnemyY) {
+                
+                currentDeaths++;
 
                 PlaySound(NULL, 0, 0); // Para a música de jogo
                 playMusicPlaying = false;
-
-                if (!gameoverMusicPlaying) {
-                    PlaySound(TEXT("assets/gameover.wav"), NULL, SND_FILENAME | SND_ASYNC );
-                    gameoverMusicPlaying = true;
-                } 
+ 
 
                 fPlayerX = 25.99f;
                 fPlayerY = 10.70f;
@@ -553,6 +678,13 @@ int main() {
             break;
 
         case STATE_GAMEOVER:
+
+            if (!gameoverMusicPlaying) {
+                PlaySound(NULL, 0, 0); 
+                PlaySound(TEXT("assets/gameover.wav"), NULL, SND_FILENAME | SND_ASYNC);
+                gameoverMusicPlaying = true;
+            }
+
             drawGameOver(screen);
 
 
@@ -582,6 +714,8 @@ int main() {
             
             if (GetAsyncKeyState('R') & 0x8000) {
                 if (!keyProcessed) {
+                    victoryMusicPlaying = false;
+                    gameoverMusicPlaying = false;
                     fPlayerX = 25.99f;
                     fPlayerY = 10.70f;
                     fEnemyX = 3.48f;
@@ -631,6 +765,13 @@ int main() {
             break;
 
         case STATE_WIN:
+
+            if (!victoryMusicPlaying) {
+                PlaySound(NULL, 0, 0); // Para qualquer música atual
+                PlaySound(TEXT("assets/victory.wav"), NULL, SND_FILENAME | SND_ASYNC);
+                victoryMusicPlaying = true;
+            }    
+
             drawWin(screen);
 
             for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
