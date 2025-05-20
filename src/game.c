@@ -86,7 +86,6 @@ char map[] =
     }
 
     int calculateScore(int deaths, float time) {
-    // Quanto menos mortes e menos tempo, maior a pontuação
     return (int)(10000 / (1 + deaths * 10 + time));
     }
 
@@ -104,7 +103,6 @@ char map[] =
     PlayerScore scores[MAX_SCORES];
     int scoreCount = 0;
 
-    // Variáveis para controle da pontuação atual
     wchar_t currentPlayerName[50] = L"";
     int currentDeaths = 0;
     float currentGameTime = 0.0f;
@@ -129,7 +127,7 @@ void addScore(const wchar_t *name, int deaths, float time) {
         scores[scoreCount].score = calculateScore(deaths, time);
         scoreCount++;
     } else {
-        // Encontra a pior pontuação
+
         int minIndex = 0;
         for (int i = 1; i < MAX_SCORES; i++) {
             if (scores[i].score < scores[minIndex].score) {
@@ -137,7 +135,7 @@ void addScore(const wchar_t *name, int deaths, float time) {
             }
         }
         
-        // Substitui se a nova pontuação for melhor
+
         if (calculateScore(deaths, time) > scores[minIndex].score) {
             wcscpy(scores[minIndex].name, name);
             scores[minIndex].deaths = deaths;
@@ -146,7 +144,7 @@ void addScore(const wchar_t *name, int deaths, float time) {
         }
     }
     
-    // Ordena o ranking (melhores primeiro)
+
     for (int i = 0; i < scoreCount - 1; i++) {
         for (int j = i + 1; j < scoreCount; j++) {
             if (scores[j].score > scores[i].score) {
@@ -313,7 +311,7 @@ void drawWin(wchar_t *screen) {
     
     _snwprintf(&screen[(textY + 4) * nScreenWidth + scoreX], nScreenWidth, L"%s", scoreText);
               
-    // Mostra o ranking
+
     const wchar_t *rankingTitle = L"=== TOP JOGADORES ===";
     int rankingX = (nScreenWidth - wcslen(rankingTitle)) / 2;
     _snwprintf(&screen[(textY + 6) * nScreenWidth + rankingX], nScreenWidth, L"%s", rankingTitle);
@@ -397,7 +395,6 @@ int main() {
         {
         case STATE_MENU:
 
-            // Resetar estatísticas da partida
             currentDeaths = 0;
             currentGameTime = 0.0f;
             nameEntered = false;
@@ -416,7 +413,7 @@ int main() {
             WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
 
             if (GetAsyncKeyState('1') & 0x8000) {
-                PlaySound(NULL, 0, 0); // Para a música
+                PlaySound(NULL, 0, 0);
                 menuMusicPlaying = false;
                 currentState = STATE_ENTER_NAME;
                 Sleep(200);
@@ -428,24 +425,20 @@ int main() {
             break;
         
         case STATE_ENTER_NAME:
-            // Limpa a tela
             for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
                 screen[i] = L' ';
                 colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
             }
                 
-            // Mensagem para digitar o nome
             const wchar_t* prompt = L"Digite seu nome e pressione ENTER:";
             int promptX = (nScreenWidth - wcslen(prompt)) / 2;
             _snwprintf(&screen[10 * nScreenWidth + promptX], 
                     nScreenWidth, L"%s", prompt);
-                
-            // Mostra o nome atual sendo digitado
+
             int nameX = (nScreenWidth - wcslen(currentPlayerName)) / 2;
             _snwprintf(&screen[12 * nScreenWidth + nameX], 
                     nScreenWidth, L"%s", currentPlayerName);
-                
-            // Processa entrada do teclado
+
             for (int i = 0; i < 256; i++) {
                 if (GetAsyncKeyState(i) & 0x8000) {
                     if (i == VK_RETURN && wcslen(currentPlayerName) > 0) {
@@ -459,7 +452,7 @@ int main() {
                         Sleep(100);
                     }
                     else if ((i >= 'A' && i <= 'Z') || (i >= '0' && i <= '9') || i == ' ' && wcslen(currentPlayerName) < 49) {
-                        // Converte para wide char e adiciona
+
                         wchar_t c = (wchar_t)i;
                         size_t len = wcslen(currentPlayerName);
                         currentPlayerName[len] = c;
@@ -523,7 +516,7 @@ int main() {
                 
                 currentDeaths++;
 
-                PlaySound(NULL, 0, 0); // Para a música de jogo
+                PlaySound(NULL, 0, 0);
                 playMusicPlaying = false;
  
 
@@ -761,7 +754,6 @@ int main() {
                     colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
                 }
 
-                // Mensagem de pause
                 const wchar_t* pauseMsg = L"PAUSE - Pressione ESC para continuar";
                 int msgLen = wcslen(pauseMsg);
                 int startX = (nScreenWidth / 2) - (msgLen / 2);
@@ -775,7 +767,6 @@ int main() {
                 WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
                 WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
 
-                // Verifica se ESC foi pressionado agora para sair do pause
                 if (bEscKeyPressed && !bEscKeyPressedPrev) {
                     currentState = STATE_PLAYING;
                     Sleep(100);
@@ -786,7 +777,7 @@ int main() {
         case STATE_WIN:
 
             if (!victoryMusicPlaying) {
-                PlaySound(NULL, 0, 0); // Para qualquer música atual
+                PlaySound(NULL, 0, 0);
                 PlaySound(TEXT("assets/victory.wav"), NULL, SND_FILENAME | SND_ASYNC);
                 victoryMusicPlaying = true;
             }    
