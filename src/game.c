@@ -159,9 +159,10 @@ void addScore(const wchar_t *name, int deaths, float time) {
 }
 
 
-void drawMenu(wchar_t *screen) {
+void drawMenu(wchar_t *screen, short *colors) {
     for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
         screen[i] = L' ';
+        colors[i] = BACKGROUND_BLUE;
     }
     const wchar_t *asciiTitle[] = {
         L":::::::.   :::         ...     :::::::. :: .::::::.   :::::::-.   ...    ::::::.    :::.  .,-:::::/ .,::::::     ...   :::.    :::.",
@@ -177,8 +178,11 @@ void drawMenu(wchar_t *screen) {
     for (int i = 0; i < titleArtHeight; i++) {
         int artLen = wcslen(asciiTitle[i]);
         int startX = (nScreenWidth - artLen) / 2;
-        _snwprintf(&screen[(titleArtStartY + i) * nScreenWidth + startX], 
-                  nScreenWidth - startX, L"%s", asciiTitle[i]);
+        int offset = (titleArtStartY + i) * nScreenWidth + startX;
+        for (int j = 0; j < artLen; j++) {
+            screen[offset + j] = asciiTitle[i][j];
+            colors[offset + j] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY | BACKGROUND_BLUE;
+        }
     }
 
     const wchar_t *option1 = L"1. Iniciar Jogo";
@@ -186,38 +190,50 @@ void drawMenu(wchar_t *screen) {
     int optionStartY = titleArtStartY + titleArtHeight + 1;
     int optionStartX = (nScreenWidth - wcslen(option1)) / 2;
 
-    _snwprintf(&screen[optionStartY * nScreenWidth + optionStartX], 
-              nScreenWidth - optionStartX, L"%s", option1);
-    _snwprintf(&screen[(optionStartY + 1) * nScreenWidth + optionStartX], 
-              nScreenWidth - optionStartX, L"%s", option2);
+    int offset1 = optionStartY * nScreenWidth + optionStartX;
+    for (int j = 0; j < wcslen(option1); j++) {
+        screen[offset1 + j] = option1[j];
+        colors[offset1 + j] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY | BACKGROUND_BLUE;
+    }
+
+    int offset2 = (optionStartY + 1) * nScreenWidth + optionStartX;
+    for (int j = 0; j < wcslen(option2); j++) {
+        screen[offset2 + j] = option2[j];
+        colors[offset2 + j] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY | BACKGROUND_BLUE;
+    }
 
     const wchar_t *artImage[] = {
-        L"                ..##################@@####MM..              ",
-        L"            @@####@@@@@@@@##########@@@@@@@@####@@          ",
-        L"          ##@@@@MMmmmm@@@@@@######@@@@@@mmmm@@@@@@MM        ",
-        L"        ++@@@@@@mmmmmmmm@@@@@@##@@@@@@mmmmmmmm@@@@##        ",
-        L"      ..##@@MMmmMMMMmmmmMM@@@@@@@@@@MMmmmmMMMMmmMM@@##      ",
-        L"      ##@@@@mmmmMM@@MMmmmmMM@@@@@@MMmmmmMM@@MMmmmm@@####    ",
-        L"    ####@@@@mmmmMM@@@@@@mmMM@@@@@@MMMM@@@@@@MMmmmm@@######  ",
-        L"    ####@@@@@@mmmmmmmmmmMM@@@@@@@@@@mmmmmmmmmmmm@@@@######  ",
-        L"  ########@@@@MMMMmmmmMM@@@@@@##@@@@@@MMmmmmMM@@@@@@######@@",
-        L"  ##########@@@@MMMMMM@@@@@@######@@@@@@MMMM@@@@@@##########",
-        L"  ################@@@@@@##############@@@@@@################",
+        L"                ###############################             ",
+        L"            ######################################          ",
+        L"          ##########################################        ",
+        L"        #############################################       ",
+        L"       ###############################################      ",
+        L"      ############000####################000############    ",
+        L"    ###############000##################000###############  ",
+        L"    #########__################################__#########  ",
+        L"  #############_____######################_____#############",
+        L"  ##################___################___##################",
+        L"  #####################_______##_______#####################",
+        L"  ############################__############################",
         L"  ##########################################################",
         L"  ##########################################################",
-        L"  MM######################################################++",
         L"    ######################################################  ",
         L"      ##################################################    ",
         L"        ##############################################      ",
-        L"          @@######################################++        "
+        L"          ##########################################        "
     };
     int artImageHeight = sizeof(artImage) / sizeof(artImage[0]);
     int artImageStartY = optionStartY + 4;
     for (int i = 0; i < artImageHeight; i++) {
         int lineLen = wcslen(artImage[i]);
         int startX = (nScreenWidth - lineLen) / 2;
-        _snwprintf(&screen[(artImageStartY + i) * nScreenWidth + startX], 
-                  nScreenWidth - startX, L"%s", artImage[i]);
+        int offset = (artImageStartY + i) * nScreenWidth + startX;
+        for (int j = 0; j < lineLen; j++) {
+            screen[offset + j] = artImage[i][j];
+            colors[offset + j] = FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_BLUE;
+            if (artImage[i][j] == L'#')
+                colors[offset + j] = FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_BLUE;
+        }
     }
 
     const wchar_t *fireArt[] = {
@@ -234,10 +250,13 @@ void drawMenu(wchar_t *screen) {
     int fireArtHeight = sizeof(fireArt) / sizeof(fireArt[0]);
     int fireStartY = nScreenHeight - fireArtHeight - 1;
     for (int i = 0; i < fireArtHeight; i++) {
-        int lineLen = wcslen(fireArt[i]);
-        int startX = (nScreenWidth - lineLen) / 2;
-        _snwprintf(&screen[(fireStartY + i) * nScreenWidth + startX], 
-                  nScreenWidth - startX, L"%s", fireArt[i]);
+            int lineLen = wcslen(fireArt[i]);
+            int startX = (nScreenWidth - lineLen) / 2;
+            int offset = (fireStartY + i) * nScreenWidth + startX;
+            for (int j = 0; j < lineLen; j++) {
+                screen[offset + j] = fireArt[i][j];
+                colors[offset + j] |= FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        }
     }
 }
 
@@ -246,26 +265,26 @@ void drawWin(wchar_t *screen) {
         screen[i] = L' ';
 
     const wchar_t *trophy[] = {
-        L"            ############################          ",
-        L"            ##########################            ",
-        L"            ##########################            ",
-        L"            ##########################  ##        ",
-        L"      ########################################    ",
-        L"    ####    ##########################      ##    ",
-        L"    ####      ########################      ##    ",
-        L"      ##      ########################    ####    ",
-        L"        ####    ####################    ####      ",
-        L"          ################################        ",
+        L"            ###########################           ",
+        L"            ###########################           ",
+        L"            ###########################           ",
+        L"            ###########################           ",
+        L"     #########################################    ",
+        L"   ####     ###########################     ####  ",
+        L"   ####      #########################      ####  ",
+        L"     ###      #######################      ###    ",
+        L"       ####     ###################     ####      ",
+        L"         #################################        ",
         L"              ########################            ",
-        L"                  ##############                  ",
-        L"                    ############                  ",
-        L"                      ########                    ",
-        L"                                                  ",
-        L"                                                  ",
-        L"                  ##############                  ",
-        L"                  ################                ",
-        L"                  ################                ",
-        L"                ##################                "
+        L"                  ###############                 ",
+        L"                    ###########                   ",
+        L"                     #########                    ",
+        L"                       #####                      ",
+        L"                      #######                     ",
+        L"                   #############                  ",
+        L"                  ###############                 ",
+        L"                 #################                ",
+        L"                ###################               "
     };
 
     const wchar_t *title = L"PARABÉNS, CAMPEÃO!";
@@ -391,11 +410,8 @@ int main() {
                 menuMusicPlaying = true;
             }
 
-            drawMenu(screen);
+            drawMenu(screen, colors);
 
-            for (int i = 0; i < nScreenWidth * nScreenHeight; i++) {
-            colors[i] = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-            }
             WriteConsoleOutputAttribute(hConsole, colors, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
             WriteConsoleOutputCharacterW(hConsole, screen, nScreenWidth * nScreenHeight, (COORD){0, 0}, &dwBytesWritten);
 
